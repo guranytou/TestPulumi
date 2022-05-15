@@ -1,0 +1,2 @@
+# TestPulumi
+Pulumiのtest用リポジトリ

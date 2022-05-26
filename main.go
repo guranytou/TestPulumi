@@ -30,6 +30,9 @@ func main() {
 				"Name": pulumi.String("example_public_1a"),
 			},
 		})
+		if err != nil {
+			return err
+		}
 
 		pubSub1c, err := ec2.NewSubnet(ctx, "pubSub1c", &ec2.SubnetArgs{
 			VpcId:            vpc.ID(),
@@ -39,6 +42,9 @@ func main() {
 				"Name": pulumi.String("example_public_1c"),
 			},
 		})
+		if err != nil {
+			return err
+		}
 
 		priSub1a, err := ec2.NewSubnet(ctx, "priSub1a", &ec2.SubnetArgs{
 			VpcId:            vpc.ID(),
@@ -52,6 +58,9 @@ func main() {
 		eip, err := ec2.NewEip(ctx, "eip", &ec2.EipArgs{
 			Vpc: pulumi.Bool(true),
 		})
+		if err != nil {
+			return err
+		}
 
 		igw, err := ec2.NewInternetGateway(ctx, "igw", &ec2.InternetGatewayArgs{
 			VpcId: vpc.ID(),
@@ -59,11 +68,17 @@ func main() {
 				"Name": pulumi.String("example_igw"),
 			},
 		})
+		if err != nil {
+			return err
+		}
 
 		natgw, err := ec2.NewNatGateway(ctx, "natgw", &ec2.NatGatewayArgs{
 			AllocationId: eip.ID(),
 			SubnetId:     pubSub1a.ID(),
 		}, pulumi.DependsOn([]pulumi.Resource{eip}))
+		if err != nil {
+			return err
+		}
 
 		pubRoutaTable, err := ec2.NewRouteTable(ctx, "pubRouteTable", &ec2.RouteTableArgs{
 			VpcId: vpc.ID(),
@@ -71,22 +86,34 @@ func main() {
 				"Name": pulumi.String("example_route_table_public"),
 			},
 		})
+		if err != nil {
+			return err
+		}
 
 		_, err = ec2.NewRoute(ctx, "pubRoute", &ec2.RouteArgs{
 			RouteTableId:         pubRoutaTable.ID(),
 			DestinationCidrBlock: pulumi.String("0.0.0.0/0"),
 			GatewayId:            igw.ID(),
 		})
+		if err != nil {
+			return err
+		}
 
 		_, err = ec2.NewRouteTableAssociation(ctx, "pubRoute1a", &ec2.RouteTableAssociationArgs{
 			SubnetId:     pubSub1a.ID(),
 			RouteTableId: pubRoutaTable.ID(),
 		})
+		if err != nil {
+			return err
+		}
 
 		_, err = ec2.NewRouteTableAssociation(ctx, "pubRoute1c", &ec2.RouteTableAssociationArgs{
 			SubnetId:     pubSub1c.ID(),
 			RouteTableId: pubRoutaTable.ID(),
 		})
+		if err != nil {
+			return err
+		}
 
 		priRouteTable, err := ec2.NewRouteTable(ctx, "priRouteTable", &ec2.RouteTableArgs{
 			VpcId: vpc.ID(),
@@ -94,17 +121,26 @@ func main() {
 				"Name": pulumi.String("example_route_table_private"),
 			},
 		})
+		if err != nil {
+			return err
+		}
 
 		_, err = ec2.NewRoute(ctx, "priRoute", &ec2.RouteArgs{
 			RouteTableId:         priRouteTable.ID(),
 			DestinationCidrBlock: pulumi.String("0.0.0.0/0"),
 			NatGatewayId:         natgw.ID(),
 		})
+		if err != nil {
+			return err
+		}
 
 		_, err = ec2.NewRouteTableAssociation(ctx, "priRoute1a", &ec2.RouteTableAssociationArgs{
 			SubnetId:     priSub1a.ID(),
 			RouteTableId: priRouteTable.ID(),
 		})
+		if err != nil {
+			return err
+		}
 
 		sgForALB, err := ec2.NewSecurityGroup(ctx, "sgForALB", &ec2.SecurityGroupArgs{
 			Name:  pulumi.String("example_sg_for_ALB"),
@@ -130,6 +166,9 @@ func main() {
 				},
 			},
 		})
+		if err != nil {
+			return err
+		}
 
 		alb, err := lb.NewLoadBalancer(ctx, "ALB", &lb.LoadBalancerArgs{
 			Name:             pulumi.String("example"),
@@ -145,6 +184,9 @@ func main() {
 				"Name": pulumi.String("example"),
 			},
 		})
+		if err != nil {
+			return err
+		}
 
 		httpTG, err := lb.NewTargetGroup(ctx, "httpTG", &lb.TargetGroupArgs{
 			Name:     pulumi.String("HTTPTG"),
@@ -158,6 +200,9 @@ func main() {
 				Protocol: pulumi.String("HTTP"),
 			},
 		})
+		if err != nil {
+			return err
+		}
 
 		_, err = lb.NewListener(ctx, "listener", &lb.ListenerArgs{
 			LoadBalancerArn: alb.Arn,
@@ -170,6 +215,9 @@ func main() {
 				},
 			},
 		}, pulumi.DependsOn([]pulumi.Resource{alb}))
+		if err != nil {
+			return err
+		}
 
 		sgForInstance, err := ec2.NewSecurityGroup(ctx, "sgForInstance", &ec2.SecurityGroupArgs{
 			Name:  pulumi.String("example_sg_for_instance"),
@@ -195,9 +243,20 @@ func main() {
 				},
 			},
 		})
+		if err != nil {
+			return err
+		}
 
 		f, err := os.Open("install_apache.sh")
+		if err != nil {
+			return err
+		}
+
 		b, err := ioutil.ReadAll(f)
+		if err != nil {
+			return err
+		}
+
 		enc := base64.StdEncoding.EncodeToString(b)
 
 		ins, err := ec2.NewInstance(ctx, "instance", &ec2.InstanceArgs{
@@ -209,12 +268,18 @@ func main() {
 			},
 			UserDataBase64: pulumi.String(enc),
 		})
+		if err != nil {
+			return err
+		}
 
 		_, err = lb.NewTargetGroupAttachment(ctx, "TGattach", &lb.TargetGroupAttachmentArgs{
 			TargetGroupArn: httpTG.Arn,
 			TargetId:       ins.ID(),
 			Port:           pulumi.Int(80),
 		})
+		if err != nil {
+			return err
+		}
 
 		return nil
 	})
